@@ -305,6 +305,16 @@ Tests verify:
 - **Zero Credentials in Plists**: The scheduler scripts and templates contain no passwords or API tokens.
 - **Safe Transports**: Uses timeouts, user-agent headers, and payload validation across all network calls.
 
+## 🤝 Acknowledgements & Credits
+
+This project builds upon the open-source job-hunt foundation originally created by **[Pratyush Narain](https://github.com/perryvegehan)** ([`perryvegehan/PWP_jobhunt`](https://github.com/perryvegehan/PWP_jobhunt)).
+
+**Added in this version:**
+- Expanded platform coverage from 3 to **12 supported ATS career platforms** (added **Workday, SmartRecruiters, Workable, Recruitee, Personio, Teamtailor, Pinpoint, Breezy HR, and Jobvite**).
+- Added scoped remote filtering to prevent US-only or region-locked jobs from leaking into India/APAC daily results.
+- Automated local macOS LaunchAgent scheduler with a one-line setup script.
+- Expanded the test suite to 138 unit tests covering all new adapters and edge cases.
+
 ---
 
 ## 📄 License
