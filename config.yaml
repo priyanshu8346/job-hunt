@@ -1,72 +1,46 @@
-# jobhunt configuration. Everything tunable lives here — no editing Python.
-#
-# Tune `filters` first. It is deterministic, free, and it is what keeps the
-# LLM bill small: roughly 2000 raw postings -> 40 candidates before a single
-# token is spent.
-
+# Full-stack, frontend, and backend roles for roughly two years of experience.
 filters:
-  # Title regexes, matched case-insensitively against the job title only.
-  # A title must match at least one include AND zero excludes.
-  #
-  # Gotcha: "sde" as a bare regex does NOT match "Software Development
-  # Engineer" — different words entirely. Use \bsde\b for the acronym and
-  # list the spelled-out variants separately, as below.
   include_titles:
-    - '\b(software|backend|back-end|server|platform|infrastructure|infra|systems|distributed|cloud)\b.*\bengineer\b'
-    - '\bengineer\b.*\b(backend|back-end|platform|infrastructure|infra|systems|distributed)\b'
-    - '\bsde\b'
-    - '\bsde\s*-?\s*(i{1,3}|[123])\b'
-    - 'software development engineer'
-    - 'software engineer'
-    - 'site reliability engineer'
-    - '\bsre\b'
-    - 'member of technical staff'
-    # systems / networking track — matches your DPDK, packet-processing and
-    # kernel background. Drop these if you widen away from low-level work.
-    - '\bnetwork(ing)?\s+(software\s+)?engineer\b'
-    - '\b(kernel|embedded|firmware|driver|packet|dataplane|data plane)\b.*\bengineer\b'
-    - '\bengineer\b.*\b(kernel|packet|dataplane|networking|performance)\b'
-    - '\bperformance engineer\b'
-    - '\bsystems engineer\b'
-    - '\bc\+\+\b.*\bengineer\b'
-    - '\bengineer\b.*\bc\+\+\b'
-
-  # Anything matching these is dropped even if an include matched.
+  - \b(software|frontend|front-end|front end|backend|back-end|back end|fullstack|full-stack|full stack|web|product|application)\b.*\b(engineer|developer)\b
+  - \b(engineer|developer)\b.*\b(software|frontend|front-end|front end|backend|back-end|back end|fullstack|full-stack|full
+    stack|web|react|node\.?js|typescript)\b
+  - \bsde\b
+  - \b(react|node\.?js|javascript|typescript|mern|next\.?js)\b.*\b(engineer|developer)\b
   exclude_titles:
-    - '\b(staff|principal|distinguished|fellow|architect)\b'      # too senior for now
-    # "Senior" at 2.5 years is a consistent 3-4 from the screener — dropping it
-    # here is free, dropping it after an LLM call is not. Delete this line once
-    # you are ~4 years in, or if you want to stretch-apply anyway.
-    - '\bsenior\b'
-    - '\b(director|vp|vice president|head of|chief|cto)\b'
-    - '\b(manager|management)\b'
-    - '\b(intern|internship|apprentice|trainee)\b'                # too junior
-    - '\b(sales|account executive|marketing|recruit|support|success)\b'
-    - '\b(frontend|front-end|ios|android|mobile|game|designer)\b' # wrong discipline
-    - '\b(data scientist|machine learning scientist|research scientist)\b'
-
-  # Substrings matched against "<location> <title>", case-insensitive.
-  # Leave empty to accept every location.
+  - \b(senior|sr\.?|staff|principal|distinguished|fellow|architect|lead)\b
+  - \b(director|vp|vice president|head of|chief|cto|manager|management)\b
+  - \b(intern|internship|apprentice|trainee)\b
+  - \b(sales|account executive|marketing|recruit|support|success)\b
+  - \b(ios|android|mobile|game|designer|firmware|embedded|kernel|driver)\b
+  - \b(data scientist|data engineer|machine learning|research scientist|qa|sdet|test|testing|devops|sre|security engineer)\b
   locations:
-    - bangalore
-    - bengaluru
-    - india
-
-  # If true, anything reading as remote passes the location gate.
+  - india
+  - bangalore
+  - bengaluru
+  - hyderabad
+  - pune
+  - chennai
+  - mumbai
+  - delhi
+  - noida
+  - gurgaon
+  - gurugram
+  - kolkata
   allow_remote: true
-
-  # Drop postings older than this. Set to null to disable.
-  # Boards often re-stamp `updated_at`, so this is a soft signal, not a promise.
+  remote_locations:
+  - worldwide
+  - global
+  - anywhere
+  - apac
+  - asia pacific
+  - asia-pacific
+  - asia/pacific
   max_age_days: 30
-
-# --- LLM stages -------------------------------------------------------------
-screen_batch_size: 8      # jobs per screening call. Higher = cheaper, sloppier.
-screen_jd_chars: 1400     # JD truncation for screening
-draft_jd_chars: 6000      # JD truncation for drafting
-score_threshold: 7.0      # below this, no draft and no digest slot
-max_per_digest: 5         # hard cap on expensive draft calls per run
-
-# --- paths ------------------------------------------------------------------
+screen_batch_size: 1
+screen_jd_chars: 6000
+draft_jd_chars: 6000
+score_threshold: 7.0
+max_per_digest: 5
 companies_file: companies.yaml
 profile_file: profile.json
 seen_file: seen.json

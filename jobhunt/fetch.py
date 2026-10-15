@@ -1,4 +1,4 @@
-"""Fetch jobs from public ATS APIs. No auth, no scraping, no ToS risk."""
+"""Read public ATS career boards and normalize their job postings."""
 from __future__ import annotations
 
 import html
@@ -133,6 +133,21 @@ ENDPOINTS = {
 def fetch_board(ats: str, slug: str, company: str | None = None,
                 session: requests.Session | None = None) -> list[Job]:
     """Hit one company's public board. Returns [] on any failure (never raises)."""
+    if ats in {"workday", "smartrecruiters", "workable", "recruitee",
+               "personio", "teamtailor", "pinpoint", "breezy", "jobvite"}:
+        from .workday import fetch_workday
+        from .boards import fetch_smartrecruiters, fetch_workable, fetch_recruitee
+        from .public_boards import (fetch_personio, fetch_teamtailor, fetch_pinpoint,
+                                    fetch_breezy, fetch_jobvite)
+        adapters = {"workday": fetch_workday, "smartrecruiters": fetch_smartrecruiters,
+                    "workable": fetch_workable, "recruitee": fetch_recruitee,
+                    "personio": fetch_personio, "teamtailor": fetch_teamtailor,
+                    "pinpoint": fetch_pinpoint, "breezy": fetch_breezy, "jobvite": fetch_jobvite}
+        try:
+            return adapters[ats](slug, company, session=session)
+        except Exception as e:
+            print(f"  ! {ats}/{company or slug} -> {type(e).__name__}: {e}")
+            return []
     if ats not in ENDPOINTS:
         raise ValueError(f"unknown ATS: {ats}")
     url_tpl, parser = ENDPOINTS[ats]

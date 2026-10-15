@@ -1,264 +1,312 @@
-# jobhunt
+# 🎯 JobHunt: Automated Personal Job-Search Agent
 
-A personal job-search agent. It reads public ATS APIs every morning, throws away
-the ~99% that don't fit you, scores what's left against your resume, drafts an
-application kit for the best few, and emails you a digest.
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Tests](https://img.shields.io/badge/tests-138%20passing-brightgreen.svg)](tests/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Zero Scraping](https://img.shields.io/badge/scraping-zero%20%2F%20pure%20APIs-success.svg)](#supported-job-boards)
+[![LLM Powered](https://img.shields.io/badge/LLM-Anthropic%20%7C%20Gemini%20%7C%20Groq%20%7C%20Ollama-orange.svg)](#supported-llm-providers)
 
-**It never submits an application.** It finds, filters, ranks and drafts. You
-read the digest, edit the cover note, and press submit yourself.
+**JobHunt** is an open-source, automated personal job-hunting engine. Every morning, it reads public career boards from companies you care about, filters out 99% of irrelevant postings for **zero cost**, scores matching roles against your real resume with an LLM, drafts customized application kits for the top few, and emails you a clean HTML digest.
 
-```
-2000 postings  →  40 candidates  →  5 in your inbox
-   fetch          regex/location      LLM screen
-                  /freshness gate     + draft
-                  (free, no LLM)
-```
-
-> **New to Python?** Read **[SETUP.md](SETUP.md)** instead — it's a 13-step guide
-> that assumes you have nothing installed. This README assumes you're comfortable
-> with a terminal.
+> **It never auto-submits applications.** It finds, filters, ranks, and drafts. You inspect the digest, polish the cover note, and click submit yourself.
 
 ---
 
-## Run it in 30 seconds, no API key
+## 🏗️ How It Works: The Cost-Guarded Funnel
+
+Job boards receive thousands of postings every week. Blasting entire career feeds into LLM prompts is slow, fragile, and expensive. JobHunt uses a deterministic three-stage funnel:
+
+```text
+  [2,500+ Raw Postings]  (Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable,
+                          Recruitee, Personio, Teamtailor, Pinpoint, Breezy HR, Jobvite)
+            │
+            ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │  Stage 1: Deterministic Pre-Filter (0 Tokens / ₹0 / $0)  │
+  │  • Regex Title Match & Exclusions (SDE, Frontend, etc.) │
+  │  • Seniority Gate (Drop Senior/Staff/Interns early)     │
+  │  • Location & Scoped Remote Enforcer (India / APAC / WW)│
+  │  • Freshness / Age Gate (Discard stale re-postings)     │
+  └─────────────────────────────────────────────────────────┘
+            │  (Eliminates ~99% of noise before LLM calls)
+            ▼
+  [~20-40 Qualified Candidates]
+            │
+            ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │  Stage 2: LLM Resume Screening (Fast & Cheap)           │
+  │  Evaluates candidates against your actual resume skills │
+  │  Assigns a 1–10 fit score + structured reasoning        │
+  └─────────────────────────────────────────────────────────┘
+            │  (Keeps score >= 7.0, max 5 per run)
+            ▼
+  [Top Matched Roles]
+            │
+            ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │  Stage 3: LLM Application Kit Drafting                  │
+  │  • Fit summary & gap analysis                           │
+  │  • Tailored bullet points highlighting relevant work    │
+  │  • Customized cover note ready to send                  │
+  │  • High-signal questions to ask the interviewer         │
+  └─────────────────────────────────────────────────────────┘
+            │
+            ▼
+  [📬 Daily HTML Email Digest] + [📊 Spreadsheet Tracker (out/tracker.csv)]
+```
+
+---
+
+## ✨ Key Features
+
+- **No Scraping & No Bot Detection**: Ingests official, public JSON, XML, and RSS feeds published by ATS platforms. No headless browsers, no Puppeteer/Selenium, no CAPTCHAs, no risk of account bans.
+- **12 Supported ATS Platforms**: Native support for Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable, Recruitee, Personio, Teamtailor, Pinpoint, Breezy HR, and Jobvite.
+- **Zero Cost Pre-Filtering**: The deterministic prefilter weeds out wrong seniorities, wrong disciplines, stale jobs, and region-locked roles without spending a single LLM token.
+- **Smart Remote Scope**: Rejects US-only or EU-only "remote" roles unless they explicitly match worldwide, APAC, or your specified target geography.
+- **Multi-Provider LLM Flexibility**: Use Anthropic Claude (Haiku / Sonnet), Google Gemini (Flash / Pro), Groq (Llama), any OpenAI-compatible provider (OpenRouter, Together, vLLM), or 100% offline with local Ollama.
+- **Automated Scheduling**: Ready-to-go GitHub Actions workflow (runs free in the cloud) or a native macOS LaunchAgent (runs locally at 08:00 AM).
+- **Application Tracker**: Deduplicates seen jobs so you are never shown the same role twice. Track applied jobs and export to CSV with built-in CLI commands.
+
+---
+
+## ⚡ 30-Second Quickstart (Zero API Keys Required)
+
+You can run the entire pipeline immediately using bundled test fixtures and an offline keyword scorer:
 
 ```bash
-git clone <your-repo> && cd jobhunt
-python -m venv .venv && .venv/Scripts/activate      # Windows
-# python -m venv .venv && source .venv/bin/activate # macOS/Linux
+git clone https://github.com/priyanshu8346/job-hunt.git
+cd job-hunt
+
+# Set up virtual environment
+python3 -m venv .venv
+source .venv/bin/activate       # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
+# Run offline mock pipeline
 python -m jobhunt run --mock --scorer keyword
 ```
 
-`--mock` runs bundled fixtures through the **real parsers** — no network.
-`--scorer keyword` swaps the LLM for a dumb token-overlap stub, so the whole
-pipeline runs with no secrets configured. You should see:
-
-```
+You will see:
+```text
+[1/5] fetching boards
+  [mock] 12 postings from 4 boards
 [2/5] filtering
   prefilter: 12 -> 5 (dropped title=5 location=1 stale=1)
 [3/5] screening 5 jobs (keyword stub — DEV ONLY)
   3 scored >= 7.0
 [5/5] digest
   wrote out/digest.html
-
 funnel: 12 scanned -> 5 passed filters -> 5 new -> 3 in digest
 ```
-
-Open `out/digest.html` in a browser. That's the email you'd have received.
-
-> The keyword scorer is **dev-only**. It cannot tell a Staff role from a
-> new-grad one and has no idea what the words mean. It exists to prove the
-> plumbing, never to build a digest you'd act on.
+Open `out/digest.html` in your browser to inspect the sample email digest.
 
 ---
 
-## Set it up for real
+## 🏢 Supported Job Boards
 
-### 1. Point it at companies you'd actually join
+JobHunt reads public career boards without authentication. Add companies to `companies.yaml` using their board type and identifier:
 
-Edit `companies.yaml`. The slug is the last path segment of a company's public
-careers board:
+| ATS Platform | `ats` key | Where to find `slug` | Example `companies.yaml` entry |
+|---|---|---|---|
+| **Greenhouse** | `greenhouse` | `boards.greenhouse.io/<slug>` | `{ats: greenhouse, slug: stripe, name: Stripe}` |
+| **Lever** | `lever` | `jobs.lever.co/<slug>` | `{ats: lever, slug: cred, name: CRED}` |
+| **Ashby** | `ashby` | `jobs.ashbyhq.com/<slug>` | `{ats: ashby, slug: plane, name: Plane}` |
+| **Workday** | `workday` | Full HTTPS career site URL | `{ats: workday, slug: 'https://postman.wd108.myworkdayjobs.com/en-US/careers', name: Postman}` |
+| **SmartRecruiters** | `smartrecruiters` | `careers.smartrecruiters.com/<slug>` | `{ats: smartrecruiters, slug: Freshworks, name: Freshworks}` |
+| **Workable** | `workable` | `apply.workable.com/<slug>` | `{ats: workable, slug: wati-dot-i-o, name: WATI}` |
+| **Recruitee** | `recruitee` | `<slug>.recruitee.com` | `{ats: recruitee, slug: transperfect, name: TransPerfect}` |
+| **Personio** | `personio` | `<slug>.jobs.personio.de` or `.com` | `{ats: personio, slug: cuculus-gmbh, name: Cuculus}` |
+| **Teamtailor** | `teamtailor` | `<slug>.teamtailor.com` | `{ats: teamtailor, slug: cartrackasiacareerpage, name: Cartrack}` |
+| **Pinpoint** | `pinpoint` | `<slug>.pinpointhq.com` | `{ats: pinpoint, slug: sunking, name: Sun King}` |
+| **Breezy HR** | `breezy` | `<slug>.breezy.hr` | `{ats: breezy, slug: codebase, name: Codebase}` |
+| **Jobvite** | `jobvite` | `jobs.jobvite.com/<slug>` | `{ats: jobvite, slug: alivecor, name: AliveCor}` |
 
-| Board URL | `ats` | `slug` |
-|---|---|---|
-| `boards.greenhouse.io/stripe` | `greenhouse` | `stripe` |
-| `jobs.lever.co/netlify` | `lever` | `netlify` |
-| `jobs.ashbyhq.com/ramp` | `ashby` | `ramp` |
+> **Coverage Note**: Closed platforms without public feeds (e.g. LinkedIn, Indeed, Naukri, Wellfound, Instahyre) require private employee credentials or violate ToS, and are deliberately excluded.
 
-The shipped list is **examples** — verify each before trusting the output.
-Companies migrate between ATS vendors and slugs go dead. A dead slug prints an
-HTTP status and returns nothing; it never kills the run. Watch the per-board
-counts on stdout: a board reporting 0 every day is a slug that needs fixing.
+---
 
-Start with 10–15 companies. A list of 200 is mostly noise.
+## 🚀 Setup Guide
 
-**No LinkedIn or Naukri.** Neither has a public API and scraping them violates
-their terms of service. The three ATS endpoints above are documented, unauthenticated,
-and intended to be read.
+### 1. Configure Target Companies (`companies.yaml`)
 
-### 2. Tune the filters
+Edit [`companies.yaml`](companies.yaml) with companies you want to monitor:
 
-`config.yaml` holds the deterministic gate that runs **before** any LLM call.
-This is the whole cost story — get it right and you spend cents a day.
+```yaml
+companies:
+  - {ats: ashby, slug: plane, name: Plane}
+  - {ats: workday, slug: 'https://postman.wd108.myworkdayjobs.com/en-US/careers', name: Postman}
+  - {ats: smartrecruiters, slug: Freshworks, name: Freshworks}
+  - {ats: lever, slug: cred, name: CRED}
+  - {ats: greenhouse, slug: capco, name: Capco}
+```
+
+### 2. Configure Filters (`config.yaml`)
+
+Tune the prefilter in [`config.yaml`](config.yaml) to match your desired titles, locations, and experience:
 
 ```yaml
 filters:
-  include_titles: ['\bsde\b', 'software development engineer', ...]
-  exclude_titles: ['\b(staff|principal)\b', '\b(manager)\b', ...]
-  locations: [bangalore, bengaluru, india]
+  include_titles:
+    - \b(software|frontend|backend|fullstack|web)\b.*\b(engineer|developer)\b
+    - \bsde\b
+  exclude_titles:
+    - \b(senior|sr\.?|staff|principal|lead|architect)\b    # drop senior roles
+    - \b(intern|internship|trainee)\b                      # drop junior roles
+    - \b(sales|marketing|recruiter|support)\b              # drop other functions
+  locations:
+    - india
+    - bangalore
+    - bengaluru
+    - hyderabad
+    - pune
+    - mumbai
+    - delhi
   allow_remote: true
+  remote_locations:
+    - worldwide
+    - global
+    - anywhere
+    - apac
+    - asia pacific
+    - asia-pacific
   max_age_days: 30
-score_threshold: 7.0
-max_per_digest: 5
+
+# LLM thresholds
+score_threshold: 7.0       # Minimum score (out of 10) to draft an application kit
+max_per_digest: 5          # Cap on daily email inclusions to prevent token spend
 ```
 
-> **`sde` does not match "Software Development Engineer".** They share no
-> substring. Use `\bsde\b` for the acronym *and* list the spelled-out variants
-> separately, or you'll silently miss half of Amazon-style postings. There's a
-> test pinning this.
+### 3. Generate Your Profile (`profile.json`)
 
-### 3. Build your profile
+Copy `.env.example` to `.env` and add your LLM API key:
 
 ```bash
-cp .env.example .env      # add ANTHROPIC_API_KEY
-python -m jobhunt profile --resume resume.pdf
+cp .env.example .env
+# Edit .env with your ANTHROPIC_API_KEY, GEMINI_API_KEY, or GROQ_API_KEY
 ```
 
-PDFs go over as a base64 document block (Anthropic and Gemini both read them
-natively — no OCR, no text extraction library). `.txt` and `.md` also work and
-are the fallback for providers that can't take documents.
-
-This writes `profile.json`. It's gitignored — read it, fix anything the model
-got wrong, and keep it out of version control.
-
-### 4. Run it
+Generate your structured profile directly from your resume:
 
 ```bash
-python -m jobhunt run                    # build the digest
-python -m jobhunt run --send             # ...and email it
-python -m jobhunt run --limit 10         # cost guard while tuning
-python -m jobhunt run --no-draft         # screen only, skip the expensive pass
+python -m jobhunt profile --resume path/to/your_resume.pdf
+```
+*(Supports `.pdf`, `.txt`, and `.md` formats)*. This creates `profile.json` (automatically gitignored). Review and adjust any extracted details.
+
+### 4. Run the Pipeline
+
+```bash
+# Build the digest and view terminal summary
+python -m jobhunt run
+
+# Generate and send the HTML digest directly via email
+python -m jobhunt run --send
+
+# Cost guard during testing (process only first 10 matching jobs)
+python -m jobhunt run --limit 10
+
+# Screen only, skip drafting kits
+python -m jobhunt run --no-draft
 ```
 
 ---
 
-## Picking providers
+## 🤖 Supported LLM Providers
 
-Screening reads hundreds of jobs and wants the cheapest decent model. Drafting
-runs ~5 times and wants the best one. So they're configured separately:
+JobHunt supports separate models for screening (hundreds of jobs → fast/cheap) and drafting (top 5 jobs → high capability):
 
 ```bash
-LLM_PROVIDER=anthropic          # sets both stages
-SCREEN_PROVIDER=groq            # ...override per stage
-DRAFT_PROVIDER=anthropic
-SCREEN_MODEL=claude-haiku-4-5-20251001
-DRAFT_MODEL=claude-sonnet-5
+# In your .env:
+LLM_PROVIDER=gemini             # default provider for both stages
+SCREEN_PROVIDER=groq           # optional: override screening stage
+DRAFT_PROVIDER=anthropic       # optional: override drafting stage
+SCREEN_MODEL=llama-3.3-70b-versatile
+DRAFT_MODEL=claude-sonnet-4-5
 ```
 
-| Provider | Value | Key | PDF resumes | Notes |
+| Provider | Provider Setting | Required Key | Resume PDF Support | Notes |
 |---|---|---|---|---|
-| Anthropic | `anthropic` | `ANTHROPIC_API_KEY` | yes | default; uses the official SDK |
-| Google Gemini | `gemini` | `GEMINI_API_KEY` | yes | generous free tier |
-| Groq | `groq` | `GROQ_API_KEY` | no | very fast, free tier |
-| OpenAI-compatible | `openai-compatible` | `GROQ_API_KEY` + `LLM_BASE_URL` | no | Together, OpenRouter, vLLM |
-| Ollama | `ollama` | none | no | fully local, `OLLAMA_HOST` |
-
-Everything except Anthropic goes over plain `requests`, so you can delete the
-`anthropic` line from `requirements.txt` and still run the whole thing.
-
-Adding a provider is one class in [`jobhunt/providers.py`](jobhunt/providers.py)
-with a `complete()` method, plus an entry in the `PROVIDERS` dict.
+| **Google Gemini** | `gemini` | `GEMINI_API_KEY` | Yes | Fast, generous free tier |
+| **Anthropic** | `anthropic` | `ANTHROPIC_API_KEY` | Yes | Top tier drafting quality |
+| **Groq** | `groq` | `GROQ_API_KEY` | No (converts to text) | Extremely fast Llama inference |
+| **OpenAI / Compatible** | `openai-compatible` | `GROQ_API_KEY` + `LLM_BASE_URL` | No | Together, OpenRouter, vLLM |
+| **Ollama** | `ollama` | None | No | 100% local and offline (`OLLAMA_HOST`) |
 
 ---
 
-## Tracking
+## ⏰ Automated Daily Scheduling
 
-`seen.json` is both the dedupe index and the application tracker — a job you've
-already been shown is never shown again. It's gitignored: it's yours, and
-shipping one would break the first run for anyone who cloned the repo.
+### Option A: Local macOS LaunchAgent (Recommended for Mac)
+
+Runs every morning at **08:00 AM** in your local timezone without needing a terminal open:
 
 ```bash
-python -m jobhunt applied "greenhouse:stripe:5501001"   # id is in the digest
-python -m jobhunt stats                                 # + CSV export
-```
+# Run one-line setup
+./scripts/setup_daily.sh
 
-`out/tracker.csv` opens in any spreadsheet.
+# Check status anytime
+launchctl print gui/$(id -u)/com.jobhunt.daily
+
+# Run manual trigger
+launchctl kickstart gui/$(id -u)/com.jobhunt.daily
+```
+*(See [DAILY_RUN.md](DAILY_RUN.md) for logs, rotation, and troubleshooting)*.
+
+### Option B: GitHub Actions (Free in the Cloud)
+
+Use the built-in [`.github/workflows/daily.yml`](.github/workflows/daily.yml) to run on weekday mornings. `seen.json` is preserved across runs using GitHub cache so you never receive duplicate emails.
+
+Add the following repository secrets (**Settings → Secrets and variables → Actions**):
+- `PROFILE_JSON`: Contents of your `profile.json`
+- `GEMINI_API_KEY` or `ANTHROPIC_API_KEY`
+- `SMTP_USER` & `SMTP_PASS`: Gmail address + [Google App Password](https://myaccount.google.com/apppasswords)
+- `MAIL_TO`: Destination email address
 
 ---
 
-## Scheduling
+## 📊 Application Tracking & History
 
-[`.github/workflows/daily.yml`](.github/workflows/daily.yml) runs it at 06:00 IST
-on weekdays. `seen.json` is carried between runs with `actions/cache`, not
-committed — it's personal, and a `seen.json` in the repo would mark every job as
-already-seen for anyone who cloned it. Nothing personal ever enters git.
-
-Repository **secrets** to set (Settings → Secrets and variables → Actions):
-
-| Secret | What |
-|---|---|
-| `PROFILE_JSON` | the entire contents of your local `profile.json` |
-| `ANTHROPIC_API_KEY` | (or `GEMINI_API_KEY` / `GROQ_API_KEY`) |
-| `SMTP_USER` / `SMTP_PASS` | Gmail address + **App Password**, not your login |
-| `MAIL_TO` | where the digest goes |
-
-Optional repository **variables**: `LLM_PROVIDER`, `SCREEN_PROVIDER`,
-`DRAFT_PROVIDER`, `SCREEN_MODEL`, `DRAFT_MODEL`.
-
-Trigger it by hand first — Actions → *daily job digest* → *Run workflow*, with
-`dry_run` ticked to build the digest artifact without emailing.
-
-Gmail needs an [App Password](https://myaccount.google.com/apppasswords); your
-normal password stops working once 2FA is on.
-
----
-
-## Layout
-
-```
-jobhunt/
-  fetch.py       Job dataclass, strip_html, 3 pure parsers, fetch_all
-  prefilter.py   title/location/freshness gate — no LLM, no cost
-  providers.py   the swappable provider interface + 5 backends
-  llm.py         screen() / draft() / build_profile() / keyword stub
-  digest.py      HTML email (inline CSS only — Gmail strips <style>)
-  mailer.py      SMTP
-  store.py       seen.json dedupe + tracker + CSV export
-  mock.py        fixtures in each ATS's native JSON shape
-  cli.py         argparse: profile / run / applied / stats
-config.yaml      filters, thresholds, paths
-companies.yaml   boards to poll
-tests/           55 tests, no network, no key
-```
-
-HTTP is kept out of the parsers on purpose. Each `parse_*(slug, company, body)`
-takes already-decoded JSON and returns `list[Job]`, which is what makes `--mock`
-exercise the real code path instead of a parallel implementation.
-
-Every job gets `job_id = "{ats}:{slug}:{id}"` — globally unique, so the same
-role posted on two boards is still two rows, and a re-run never duplicates.
-
-### ATS quirks the parsers handle
-
-- **Greenhouse** — `content` is HTML-entity-escaped HTML. Unescape *before*
-  stripping tags and again after, or you ship `&amp;` into the prompt.
-- **Lever** — `createdAt` is epoch **milliseconds**. The full JD is split across
-  `descriptionPlain` **+** `lists[].text` **+** `lists[].content` **+**
-  `additionalPlain`; concatenate all four or you lose the requirements section
-  and every job looks unqualified.
-- **Ashby** — skip `isListed: false`; those are unpublished drafts.
-
----
-
-## Tests
+`seen.json` records every job seen so you never get duplicates. Built-in CLI commands let you manage your pipeline:
 
 ```bash
-python -m pytest tests -q
+# Mark a job as applied (job_id is listed in every digest)
+python -m jobhunt applied "workday:postman:careers:JR1000052"
+
+# View status summary and update out/tracker.csv
+python -m jobhunt stats
 ```
 
-No network, no API key, no cost. The suite covers:
-
-- each parser against fixtures in its **native** ATS shape
-- the two bugs that cost me an evening each: Lever's epoch-ms timestamps
-  (fixture dates are generated relative to *now*, never hardcoded, so they
-  can't silently age past the freshness gate) and the `\bsde\b` regex
-- prefilter rejects the planted junk: wrong seniority, wrong city, wrong
-  function, a stale posting, an unlisted Ashby draft
-- the LLM layer with the provider stubbed: batching splits at the configured
-  size, JD truncation is applied before send, fenced/preamble/object-or-array
-  JSON all parse, scores land on the right job when returned out of order, a
-  failed batch warns and the run continues, and the draft kit always has every
-  key the digest renders
+Exported tracker CSVs (`out/tracker.csv`) can be opened directly in Excel, Google Sheets, or Numbers.
 
 ---
 
-## Cost
+## 🧪 Running Tests
 
-With ~15 boards, a tight `config.yaml`, Haiku screening and Sonnet drafting,
-this lands in the low single-digit rupees per day. The prefilter is what makes
-that true: nothing reaches a model until it has already passed title, location
-and freshness. Set `SCREEN_PROVIDER=groq` or `gemini` and it's free.
+The test suite runs completely offline with mock fixtures and zero network requests:
 
-Use `--limit` while tuning filters so a bad regex can't run up a bill.
+```bash
+PYTHONPATH=. pytest
+```
+```text
+============================= 138 passed in 0.12s ==============================
+```
+
+Tests verify:
+- All 12 ATS parsers against native JSON/XML/RSS payloads
+- HTML entity unescaping, block tags, and formatting cleanup
+- Prefilter title regexes, discipline matching, seniority gates, and regional remote limits
+- Epoch millisecond normalization and ISO date parsing
+- LLM response parsing (JSON markdown blocks, reasoning preamble, malformed array handling)
+
+---
+
+## 🔒 Security & Privacy
+
+- **Never Commits Personal Data**: `.env`, `seen.json`, `profile.json`, `resume.*`, and generated files in `out/` are strictly ignored by `.gitignore`.
+- **Zero Credentials in Plists**: The scheduler scripts and templates contain no passwords or API tokens.
+- **Safe Transports**: Uses timeouts, user-agent headers, and payload validation across all network calls.
+
+---
+
+## 📄 License
+
+Distributed under the [MIT License](LICENSE). Contributions, bug reports, and new ATS adapters are welcome!

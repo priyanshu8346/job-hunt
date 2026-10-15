@@ -32,3 +32,7 @@ env/
 .idea/
 .DS_Store
 Thumbs.db
+
+# personal LaunchAgent plists (use .template for repo)
+scripts/*.plist
+!scripts/*.template

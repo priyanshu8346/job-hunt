@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<key>PYTHONUNBUFFERED</key>
+		<string>1</string>
+	</dict>
+	<key>Label</key>
+	<string>com.jobhunt.daily</string>
+	<key>ProcessType</key>
+	<string>Background</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>{{PYTHON_BIN}}</string>
+		<string>{{RUNNER_SCRIPT}}</string>
+	</array>
+	<key>StandardErrorPath</key>
+	<string>{{PROJECT_DIR}}/out/logs/scheduler.log</string>
+	<key>StandardOutPath</key>
+	<string>{{PROJECT_DIR}}/out/logs/scheduler.log</string>
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>8</integer>
+		<key>Minute</key>
+		<integer>0</integer>
+	</dict>
+	<key>WorkingDirectory</key>
+	<string>{{PROJECT_DIR}}</string>
+</dict>
+</plist>

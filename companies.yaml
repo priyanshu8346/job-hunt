@@ -1,38 +1,28 @@
-# Boards to poll. One entry per company.
-#
-#   ats:   greenhouse | lever | ashby
-#   slug:  the company's board identifier (NOT its domain)
-#   name:  whatever you want to see in the digest
-#
-# The slug is the last path segment of the company's public careers board:
-#   https://boards.greenhouse.io/<slug>        -> ats: greenhouse
-#   https://jobs.lever.co/<slug>               -> ats: lever
-#   https://jobs.ashbyhq.com/<slug>            -> ats: ashby
-#
-# THESE ARE EXAMPLES — verify each one before you trust the output. Companies
-# migrate between ATS vendors and slugs go dead. Check a slug in your browser:
-#   https://boards-api.greenhouse.io/v1/boards/<slug>/jobs?content=true
-#   https://api.lever.co/v0/postings/<slug>?mode=json
-#   https://api.ashbyhq.com/posting-api/job-board/<slug>?includeCompensation=true
-#
-# A dead slug is not fatal: fetch_board prints the HTTP status and returns [],
-# so one bad entry never takes down the run. Watch the per-board job counts on
-# stdout — a board reporting 0 jobs every day is a slug that needs fixing.
-#
-# Start with 10-15 companies you would actually join. A list of 200 is mostly
-# noise and makes the prefilter counts impossible to reason about.
-
+# Public ATS boards verified against their live job APIs on 2026-10-15.
 companies:
-  - {ats: greenhouse, slug: stripe,      name: Stripe}
-  - {ats: greenhouse, slug: databricks,  name: Databricks}
-  - {ats: greenhouse, slug: cloudflare,  name: Cloudflare}
-  - {ats: greenhouse, slug: figma,       name: Figma}
-  - {ats: greenhouse, slug: dropbox,     name: Dropbox}
-  - {ats: greenhouse, slug: coinbase,    name: Coinbase}
-  - {ats: greenhouse, slug: reddit,      name: Reddit}
-  - {ats: lever,      slug: voleon,      name: Voleon}
-
-  - {ats: ashby,      slug: openai,      name: OpenAI}
-  - {ats: ashby,      slug: ramp,        name: Ramp}
-  - {ats: ashby,      slug: linear,      name: Linear}
-  - {ats: ashby,      slug: vanta,       name: Vanta}
+  - {ats: ashby, slug: plane, name: Plane}
+  - {ats: ashby, slug: aiprise, name: AiPrise}
+  - {ats: ashby, slug: Soulside AI, name: Soulside AI}
+  - {ats: ashby, slug: sarvam, name: Sarvam}
+  - {ats: ashby, slug: broccoli, name: Broccoli AI}
+  - {ats: ashby, slug: avoca, name: Avoca}
+  - {ats: ashby, slug: build-ai, name: Build AI}
+  - {ats: ashby, slug: uptimeai, name: UptimeAI}
+  - {ats: ashby, slug: certifyos, name: CertifyOS}
+  - {ats: greenhouse, slug: platformscience, name: Platform Science}
+  - {ats: greenhouse, slug: globalhealthcareexchangeinc, name: GHX}
+  - {ats: greenhouse, slug: capco, name: Capco}
+  - {ats: ashby, slug: netgear, name: NETGEAR}
+  - {ats: ashby, slug: reacher, name: Reacher}
+  - {ats: ashby, slug: Tempo, name: Tempo}
+  - {ats: workday, slug: 'https://postman.wd108.myworkdayjobs.com/en-US/careers', name: Postman}
+  - {ats: smartrecruiters, slug: Freshworks, name: Freshworks}
+  - {ats: workable, slug: wati-dot-i-o, name: WATI}
+  - {ats: recruitee, slug: transperfect, name: TransPerfect}
+  - {ats: personio, slug: cuculus-gmbh, name: Cuculus}
+  - {ats: teamtailor, slug: cartrackasiacareerpage, name: Cartrack}
+  - {ats: pinpoint, slug: sunking, name: Sun King}
+  - {ats: breezy, slug: codebase, name: Codebase}
+  - {ats: jobvite, slug: alivecor, name: AliveCor}
+  - {ats: lever, slug: meesho, name: Meesho}
+  - {ats: lever, slug: cred, name: CRED}

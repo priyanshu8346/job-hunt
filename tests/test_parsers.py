@@ -113,7 +113,8 @@ def test_parsers_take_decoded_json_not_a_response():
     "Software Engineer II, Distributed Systems",
     "Software Development Engineer, Core Infra",
     "Backend Engineer (Go)",
-    "Site Reliability Engineer",
+    "Frontend Engineer, Design Systems",
+    "Full Stack Developer",
     "SDE II",
 ])
 def test_include_titles_match_real_titles(title):
@@ -135,7 +136,7 @@ def test_bare_sde_regex_does_not_match_the_spelled_out_title():
     "Staff Software Engineer, Storage",       # too senior
     "Engineering Manager, Platform",          # management track
     "Enterprise Account Executive",           # wrong function
-    "Frontend Engineer, Design Systems",      # wrong discipline
+    "Embedded Software Engineer",            # wrong discipline
     "Data Scientist, Growth",                 # wrong discipline
 ])
 def test_junk_titles_are_rejected(title):
@@ -150,7 +151,7 @@ def test_full_mock_funnel_keeps_only_the_five_real_matches():
     titles = sorted(j.title for j in kept)
     assert titles == [
         "Backend Engineer (Go)",
-        "Site Reliability Engineer",
+        "Frontend Engineer, Design Systems",
         "Software Development Engineer, Core Infra",
         "Software Engineer II, Distributed Systems",
         "Software Engineer, Networking",
@@ -163,7 +164,10 @@ def test_stale_posting_is_dropped_by_freshness_gate():
 
 
 def test_wrong_city_dropped_but_remote_kept():
-    kept = prefilter(fetch_all_mock(), FILTERS)
+    from dataclasses import replace
+    jobs = [replace(j, title="Backend Engineer") if j.title == "Site Reliability Engineer" else j
+            for j in fetch_all_mock()]
+    kept = prefilter(jobs, FILTERS)
     assert not any("San Francisco" in (j.location or "") for j in kept)
     assert any("Remote" in (j.location or "") for j in kept)
 
@@ -186,3 +190,18 @@ def test_allow_remote_is_what_lets_an_out_of_region_remote_role_through():
 def test_empty_filters_keep_everything():
     jobs = fetch_all_mock()
     assert len(prefilter(jobs, {})) == len(jobs)
+
+
+@pytest.mark.parametrize("location,expected", [
+    ("Remote - United States", False),
+    ("Remote - Europe", False),
+    ("Remote - Global", True),
+    ("Remote - APAC", True),
+    ("Remote - Asia/Pacific", True),
+    ("Remote - India", True),
+    ("Bengaluru, India", True),
+])
+def test_remote_scope_rejects_region_restricted_jobs(location, expected):
+    from jobhunt.fetch import Job
+    job = Job("x", "lever", "Example", "Frontend Engineer", location, "", "React")
+    assert bool(prefilter([job], FILTERS)) == expected
