@@ -68,6 +68,7 @@ jobs:
       - name: Run the pipeline
         env:
           LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'anthropic' }}
+          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
           SCREEN_PROVIDER: ${{ vars.SCREEN_PROVIDER }}
           DRAFT_PROVIDER: ${{ vars.DRAFT_PROVIDER }}
           SCREEN_MODEL: ${{ vars.SCREEN_MODEL }}
